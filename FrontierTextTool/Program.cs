@@ -14,6 +14,7 @@ namespace FrontierTextTool
     {
         static bool verbose = false;
         static bool autoClose = false;
+        static bool trueOffsets = false;
 
         //[STAThread]
         static void Main(string[] args)
@@ -22,6 +23,7 @@ namespace FrontierTextTool
 
             if (args.Any("-verbose".Contains)) verbose = true;
             if (args.Any("-close)".Contains)) autoClose = true;
+            if (args.Any("-trueoffsets)".Contains)) trueOffsets = true;
 
             if (args[0] == "dump") DumpAndHash(args[1], Convert.ToInt32(args[2]), Convert.ToInt32(args[3]));
             if (args[0] == "insert") InsertStrings(args[1], args[2]);
@@ -192,15 +194,25 @@ namespace FrontierTextTool
             }
 
             // Replace offsets in binary file
-            for (int p = 0; p < inputArray.Length; p += 4)
-            {
-                if (p + 4 > inputArray.Length) continue;
-                int cur = BitConverter.ToInt32(inputArray, p);
-                if (offsetDict.ContainsKey(cur) && p > 10000)
+            if (trueOffsets) {
+                for (int i = 0; i < offsetDict.Count; i++)
                 {
-                    int replacement = 0; offsetDict.TryGetValue(cur, out replacement);
+                    int replacement = offsetDict.ElementAt(i).Value;
                     byte[] newPointer = BitConverter.GetBytes(replacement);
-                    for (int w = 0; w < 4; w++) inputArray[p + w] = newPointer[w];
+                    int test = offsetDict.ElementAt(i).Key;
+                    for (int w = 0; w < 4; w++) inputArray[offsetDict.ElementAt(i).Key + w] = newPointer[w];
+                }
+            } else {
+                for (int p = 0; p < inputArray.Length; p += 4)
+                {
+                    if (p + 4 > inputArray.Length) continue;
+                    int cur = BitConverter.ToInt32(inputArray, p);
+                    if (offsetDict.ContainsKey(cur) && p > 10000)
+                    {
+                        int replacement = 0; offsetDict.TryGetValue(cur, out replacement);
+                        byte[] newPointer = BitConverter.GetBytes(replacement);
+                        for (int w = 0; w < 4; w++) inputArray[p + w] = newPointer[w];
+                    }
                 }
             }
 
@@ -213,7 +225,7 @@ namespace FrontierTextTool
             Directory.CreateDirectory("output");
             string outputFile = $"output\\{Path.GetFileName(inputFile)}";
             File.WriteAllBytes(outputFile, outputArray);
-
+            return;
             // Pack with jpk type 0 and encrypt file with ecd
             Pack.JPKEncode(0, outputFile, outputFile, 15);
             byte[] buffer = File.ReadAllBytes(outputFile);
