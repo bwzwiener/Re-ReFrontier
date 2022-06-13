@@ -260,11 +260,26 @@ namespace FrontierTextTool
             while (brInput.BaseStream.Position < endOffset)
             {
                 long off = brInput.BaseStream.Position;
+                long tmpPos = brInput.BaseStream.Position;
+
+                if (trueOffsets)
+                {
+                    UInt32 strPos = brInput.ReadUInt32();
+                    tmpPos = brInput.BaseStream.Position;
+                    brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
+
+                }
+
                 string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).
                     Replace("\t", "<TAB>"). // Replace tab
                     Replace("\r\n", "<CLINE>"). // Replace carriage return
                     Replace("\n", "<NLINE>"); // Replace new line
                 txtOutput.WriteLine($"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
+
+                if (trueOffsets)
+                {
+                    brInput.BaseStream.Seek(tmpPos, SeekOrigin.Begin);
+                }
             }
             txtOutput.Close();
         }
