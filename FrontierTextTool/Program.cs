@@ -265,7 +265,7 @@ namespace FrontierTextTool
                 if (trueOffsets)
                 {
                     UInt32 strPos = brInput.ReadUInt32();
-                    if (strPos == 0) continue;
+                    if (strPos == 0 || strPos > brInput.BaseStream.Length) continue;
                     tmpPos = brInput.BaseStream.Position;
                     brInput.BaseStream.Seek(strPos, SeekOrigin.Begin);
 
