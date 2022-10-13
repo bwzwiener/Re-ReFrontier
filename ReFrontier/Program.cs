@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using LibReFrontier;
 
@@ -20,6 +21,7 @@ namespace ReFrontier
         static bool ignoreJPK = false;
         static bool stageContainer = false;
         static bool autoStage = false;
+        static bool mhfup = false;
 
         //[STAThread]
         static void Main(string[] args)
@@ -63,6 +65,7 @@ namespace ReFrontier
             if (args.Any("-ignoreJPK".Contains)) { ignoreJPK = true; repack = false; }
             if (args.Any("-stageContainer".Contains)) { stageContainer = true; repack = false; }
             if (args.Any("-autoStage".Contains)) { autoStage = true; repack = false; }
+            if (args.Any("-mhfup".Contains)) mhfup = true;
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
@@ -74,7 +77,19 @@ namespace ReFrontier
                     if (!repack && !encrypt)
                     {
                         string[] inputFiles = Directory.GetFiles(input, "*.*", SearchOption.AllDirectories);
-                        ProcessMultipleLevels(inputFiles);
+
+                        if (mhfup) {
+                            StreamWriter txtOutput = new StreamWriter("mhfup.csv", true, Encoding.GetEncoding("shift-jis"));
+                            txtOutput.NewLine = "\n";
+                            txtOutput.WriteLine("crc32,date1,date2,filename,lenght,0");
+                            foreach (string inputFile in inputFiles)
+                            {
+                                txtOutput.WriteLine(Helpers.GetUpdateEntry(inputFile));
+                            }
+                            txtOutput.Close();
+                        } else {
+                            ProcessMultipleLevels(inputFiles);
+                        }
                     }
                     else if (repack) Pack.ProcessPackInput(input);
                     else if (compress) Console.WriteLine("A directory was specified while in compression mode. Stopping.");
